@@ -1,4 +1,4 @@
-Azure Event-Driven CSV Ingestion Pipeline with Copilot Integration
+ Azure Event-Driven CSV Ingestion Pipeline with Copilot Integration
 
  Overview
 
@@ -234,10 +234,15 @@ Final Result
 You now have:
 
 ✔ Automated event-driven CSV ingestion
+
 ✔ File processing & row counting
+
 ✔ Queue-based messaging
+
 ✔ A working REST API
+
 ✔ Copilot-ready integration
+
 ✔ Fully serverless Azure architecture
 
 
