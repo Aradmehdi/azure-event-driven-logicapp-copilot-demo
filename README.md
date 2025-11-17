@@ -1,6 +1,7 @@
- Azure Event-Driven CSV Ingestion Pipeline with Copilot Integration
-
- Overview
+**Azure Event-Driven CSV Ingestion Pipeline with Copilot Integration**
+ ________________________________________________________
+ 
+ **Overview**
 
 This project demonstrates an end-to-end event-driven data ingestion pipeline in Azure.
 When a CSV file is uploaded to Azure Blob Storage, it automatically:
@@ -18,11 +19,12 @@ Sends the processed result to an Azure Storage Queue
 A second Logic App exposes an HTTP API endpoint that returns the latest processed message.
 This endpoint can be used by Microsoft Copilot Studio, Custom Copilot, or any application that wants to query the latest CSV ingestion result.
 
-Architecture
+_________________
+**Architecture**
 
 CSV Upload → Event Grid → Logic App (Ingest) → Storage Queue → Logic App (API) → Copilot / Client App
 
-Features
+**Features**
 
 ✔ Event-driven architecture
 
@@ -48,9 +50,9 @@ Provides an endpoint returning the latest file’s metadata.
 
 Zero servers, fully scalable.
 
+____________
 
-
-Technologies Used
+**Technologies Used**
 
 
 Azure Blob Storage
@@ -67,8 +69,9 @@ HTTP-triggered API Logic App
 
 Copilot-compatible REST endpoint
 
+_________
 
-Step-by-Step Implementation
+**Step-by-Step Implementation**
 
 
 Create Storage Resources
@@ -90,8 +93,8 @@ incoming
 Name:
 outqueue
 
-
-Configure Event Grid
+____________
+**Configure Event Grid**
 
 
 We want Event Grid to trigger a Logic App when a file is uploaded.
@@ -112,18 +115,18 @@ blob URL
 event time
 file path
 and more.
+____________
 
-
-Create Logic App Standard: ingest_on_blob_eg
+**Create Logic App Standard: ingest_on_blob_eg**
 This workflow processes the CSV file.
 
 Steps:
- Step 1 — Trigger
+ **Step 1 — Trigger**
 
 Trigger: When a resource event occurs
 (Event Grid → Logic App)
 
- Step 2 — Compose (extract blob path)
+** Step 2 — Compose (extract blob path)**
 We use:
 
 triggerBody()?['subject']
@@ -132,38 +135,38 @@ Example:
 /blobServices/default/containers/incoming/blobs/myfile.csv
 
 
-Step 3 — ComposeBlobPath
+**Step 3 — ComposeBlobPath**
 
 Extract the actual path:
 replace(outputs('Compose'), '/blobServices/default/containers/', '')
 
 
- Step 4 — Get blob content (V2)
+** Step 4 — Get blob content (V2)**
 
 Storage account: your storage account
 Blob path: ComposeBlobPath output
 
 This retrieves the CSV file contents.
 
-Step 5 — ComposeCsv
+**Step 5 — ComposeCsv**
 
 Input:
 @{body('Get_blob_content_(V2)')}
 
 
-Step 6 — ComposeLines
+**Step 6 — ComposeLines**
 
 Split CSV into individual lines:
 @split(outputs('ComposeCsv'), '\n')
 
 
-Step 7 — ComposeRowCount
+**Step 7 — ComposeRowCount**
 
 Count data rows (excluding header):
 @sub(length(outputs('ComposeLines')), 1)
 
 
-Step 8 — Add Message to Queue
+**Step 8 — Add Message to Queue**
 
 Queue: outqueue
 Message:
@@ -173,23 +176,23 @@ Message:
   "eventTime": "@{triggerBody()?['eventTime']}"
 }
 
-
-Build API Logic App: copilot_get_latest
+___________________
+**Build API Logic App: copilot_get_latest**
 
 This serves as a REST API for Copilot.
 
-Step 1 — Trigger
+**Step 1 — Trigger**
 When an HTTP request is received
 (You may choose GET or POST — GET works fine for browser testing.)
 
 
-Step 2 — Get Messages
+**Step 2 — Get Messages**
 
 From storage queue outqueue.
 Retrieves latest messages.
 
 
-Step 3 — For each message → Compose Message
+**Step 3 — For each message → Compose Message**
 
 Input:
 @item()?['content']
@@ -197,24 +200,24 @@ Input:
 This extracts the JSON string from each queue message.
 
 
-Step 4 — Response
+**Step 4 — Response**
 
 Status code:
 
 200
 Body:
 @outputs('Compose_Message')
+________________
 
-
-Test Output
+**Test Output**
 
 When opening the API URL in browser you get:
 [
   "{\n  \"fileName\": \"https://.../incoming/test.csv\",\n  \"rows\": \"3\",\n  \"eventTime\": \"2025-11-17T10:49:46Z\"\n}"
 ]
 
-
-Connect to Microsoft Copilot (Optional)
+______________
+**Connect to Microsoft Copilot (Optional)**
 
 In Copilot Studio:
 
@@ -228,8 +231,8 @@ Copilot can now answer questions like:
 
 “How many rows did the last uploaded CSV contain?”
 
-
-Final Result
+____________________
+**Final Result**
 
 You now have:
 
@@ -244,6 +247,7 @@ You now have:
 ✔ Copilot-ready integration
 
 ✔ Fully serverless Azure architecture
+
 
 
 
