@@ -1,1 +1,108 @@
+{
+  "kind": "Stateful",
+  "definition": {
+    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {},
+    "triggers": {
+      "When_a_resource_event_occurs": {
+        "type": "Request",
+        "kind": "Http",
+        "inputs": {
+          "schema": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "eventType": {
+                "type": "string"
+              },
+              "subject": {
+                "type": "string"
+              },
+              "eventTime": {
+                "type": "string"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "actions": {
+      "Compose_Subject": {
+        "type": "Compose",
+        "inputs": "@triggerBody()?['subject']"
+      },
+      "Compose_BlobPath": {
+        "runAfter": {
+          "Compose_Subject": [
+            "Succeeded"
+          ]
+        },
+        "type": "Compose",
+        "inputs": "@replace(triggerBody()?['subject'], '/blobServices/default/containers/', '')"
+      },
+      "Get_blob_content": {
+        "runAfter": {
+          "Compose_BlobPath": [
+            "Succeeded"
+          ]
+        },
+        "type": "Http",
+        "inputs": {
+          "method": "GET",
+          "uri": "@{concat('https://', '<YOUR-STORAGE-ACCOUNT-NAME>', '.blob.core.windows.net/', outputs('Compose_BlobPath'))}"
+        },
+        "description": "OBS: I din riktiga app används Azure Blob Storage-connector. Här används ren HTTP mot blob-URL som exempel."
+      },
+      "Compose_Csv": {
+        "runAfter": {
+          "Get_blob_content": [
+            "Succeeded"
+          ]
+        },
+        "type": "Compose",
+        "inputs": "@body('Get_blob_content')"
+      },
+      "Compose_Lines": {
+        "runAfter": {
+          "Compose_Csv": [
+            "Succeeded"
+          ]
+        },
+        "type": "Compose",
+        "inputs": "@split(outputs('Compose_Csv'), '\\n')"
+      },
+      "Compose_RowCount": {
+        "runAfter": {
+          "Compose_Lines": [
+            "Succeeded"
+          ]
+        },
+        "type": "Compose",
+        "inputs": "@sub(length(outputs('Compose_Lines')), 1)"
+      },
+      "Add_message_to_queue": {
+        "runAfter": {
+          "Compose_RowCount": [
+            "Succeeded"
+          ]
+        },
+        "type": "Compose",
+        "description": "I din riktiga miljö använder du Azure Queue Storage-connectorn. Här gör vi bara Compose som visar JSON som skulle skickas.",
+        "inputs": "@json(concat('{\"fileName\":\"', triggerBody()?['data']?['url'], '\",\"rows\":\"', string(outputs('Compose_RowCount')), '\",\"eventTime\":\"', triggerBody()?['eventTime'], '\"}'))"
+      }
+    },
+    "outputs": {}
+  }
+}
 
